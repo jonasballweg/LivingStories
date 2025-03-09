@@ -43,4 +43,5 @@ Parameters:
    - Double-check that proper nouns, technical terms, and culturally significant elements remain intact and that the overall message is preserved.
    - 
 
-If necesary, use frameworks like LangChain or AutoGen (or any more up-to-date frameworks) in the code.  
+If necesary, use frameworks like LangChain or AutoGen (or any more up-to-date frameworks) in the code. 
+Use OpenAi API for LLM completions and text embeddings.
