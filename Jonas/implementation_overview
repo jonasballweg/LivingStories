@@ -1,0 +1,90 @@
+OPenAI API key: sk-proj-B-l1nx4S6YalE2LOxHhu\_Fu8XsCW1PTAdlbHHXxMW3UOysXRZzKJU6q2Wjgqdj2Zo96Xm9dMQ1T3BlbkFJtZdA75FX9XLkoPDg7cETK6lRZPOjlZ4Yu60grJ\_XXP6n19DhBSE-Z5PUTJRVgUUEPuv54LXwUA
+
+# Coding Philosophy
+
+* Clean code and good software design principles  
+  * Clean Code: A Handbook of Agile Software Craftsmanship \- Robert C. Martin  
+  * A Philosophy of Software Design \- John Ousterhood  
+* LLM agnostic
+
+* # Language agnostic (to provide multilinguality)
+
+# Key Functions
+
+To begin development, the following are core functions that we need to build the app's with focus on personalized, story-based language learning.
+
+## 1\. Generating Text Aligned with User Proficiency
+
+Function: *generateProficiencyAlignedText (generationPrompt, proficiencyLevel, userVocabulary)*  
+Purpose:
+
+* This function takes a user-provided prompt, processes it via a Large Language Model (e.g., GPT-4 API), and ensures the returned text matches the user’s language level.  
+* Generate immersive, interactive stories that adapt to the user’s linguistic capabilities, helping them learn naturally.
+
+Parameters:
+
+* *generationPrompt*: A scenario or story seed provided by the user for the LLM.  
+* *proficiencyLevel*: The user’s language proficiency (e.g., HSK 1-9 for Mandarin).  
+* userVocabulary: A list of all words which the user knows. Every word gets a score assigned between 0 (user does not know the word at all) to 1 (user knows the word perfectly).
+
+Coding Approaches
+
+* Generate-Evaluate-Adjust approach:   
+  * 1\. Tell the LLM to generate a text using a certain language level  
+  * 2\. Evaluate if the generated text contains words that the user does not know  
+  * 3\. Replace words that are not suited for the user with simpler words.   
+    * We could use word embeddings to find synonyms in the user’s vocabulary.  
+    * We could use sentence embeddings to make sure we find words in knownWords that fit the context (not exactly sure how to do this?)  
+  * Useful frameworks for this: LangChain, Autogen
+
+## 2\. Adjusting an Existing Text for the User’s Language Proficiency
+
+*Function: adjustTextToProficiency(text, proficiencyLevel, userVocabulary)*  
+Changes a text so that it matches the users language capabilities  
+Parameters*:*
+
+* *text* that should be changed  
+* *proficiencyLevel*: The user’s language proficiency (e.g., HSK 1-9 for Mandarin, A1-C2 for European languages).  
+* userVocabulary: A list of all words which the user knows. Every word gets a score assigned between 0 (user does not know the word at all) to 1 (user knows the word perfectly).
+
+Coding approach
+
+1. Tell the LLM to generate a text using *proficiencyLevel,* the description of the language level  
+2. Evaluate if the generated text contains words that the user does not know  
+3. Replace words that are not suited for the user with simpler words. We could use word embeddings to find synonyms in the user’s vocabulary. We could use sentence embeddings to make sure we find words in knownWords that fit the context (not exactly sure how to do this?)  
+4. Useful frameworks for this: LangChain, Autogen
+
+## 3\. Generating Text with Incorporated Target Vocabulary
+
+Function: *generateTextWithSpecifiedWords(generationPrompt, proficiencyLevel, targetVocabulary, inclusionPriority, userVocabulary)*  
+Purpose:
+
+* This variation of the core function prioritizes embedding specific vocabulary words into generated texts.
+
+Parameters:
+
+* *targetVocabulary* : Words the user is actively learning and should encounter.  
+* inclusionPriority: A value determining the balance between text quality and strict inclusion of specific words (e.g., high force may reduce linguistic naturalness).
+
+Use Case:
+
+* Ideal for creating texts where users can repeatedly encounter their target vocabulary, reinforcing memory through context.
+
+## 4\. Predicting Vocabulary Familiarity
+
+Function: *predictWordFamiliarity(targetWord, userVocabulary)*  
+Purpose:
+
+* Predict whether a user is likely to know a specific word based on their familiarity scores for related vocabulary.  
+* This function supports dynamic text adjustments by omitting unfamiliar words, maintaining alignment with the user's proficiency.
+
+Parameters:
+
+* *targetWord*: The target vocabulary word.  
+* *userVocabulary*: A dataset of known words and their familiarity scores. Some words can have a null value (i.e. no information about the probability)
+
+Coding Approach
+
+* Use word frequency as a factor  
+* Compute embedding similarity for all words which the user already knows → Maybe use clustering for this? This includes two aspects: The probability that the user is familiar with (1) the word field/topic and (2) words that look similar.  
+* Give the LLM a list of (randomly selected) words that the user knows. Then ask the LLM to return the likelihood that the user knows the specific word. 
