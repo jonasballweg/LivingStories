@@ -1,78 +1,108 @@
-import sqlite3
-from typing import Optional
+from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, DateTime
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker, relationship
+from typing import List, Tuple, Optional
+from datetime import datetime
+
+Base = declarative_base()
+
+class User(Base):
+    __tablename__ = 'users'
+    user_id = Column(Integer, primary_key=True)
+    username = Column(String, unique=True, nullable=False)
+
+class Word(Base):
+    __tablename__ = 'words'
+    word_id = Column(Integer, primary_key=True)
+    word = Column(String, unique=True, nullable=False)
+    language = Column(String, nullable=False)  # e.g., "Spanish"
+    definition = Column(String)  # Optional definition
+
+class UserProgress(Base):
+    __tablename__ = 'user_progress'
+    user_id = Column(Integer, ForeignKey('users.user_id'), primary_key=True)
+    word_id = Column(Integer, ForeignKey('words.word_id'), primary_key=True)
+    correct_count = Column(Integer, default=0)
+    incorrect_count = Column(Integer, default=0)
+    last_attempted = Column(DateTime, default=datetime.utcnow)
+    user = relationship("User")
+    word = relationship("Word")
 
 class LanguageLearningDatabase:
-    """Handles all database operations for the language learning app."""
-    def __init__(self, db_name: str = "language_learning.db"):
-        self.db_name = db_name
-        self.conn = sqlite3.connect(self.db_name)
-        self.cursor = self.conn.cursor()
-
-    def create_tables(self):
-        """Creates necessary tables if they don't exist."""
-        self.cursor.execute('''
-            CREATE TABLE IF NOT EXISTS users (
-                user_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                username TEXT NOT NULL UNIQUE
-            )
-        ''')
-        self.cursor.execute('''
-            CREATE TABLE IF NOT EXISTS words (
-                word_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                word TEXT NOT NULL UNIQUE
-            )
-        ''')
-        self.cursor.execute('''
-            CREATE TABLE IF NOT EXISTS user_progress (
-                user_id INTEGER,
-                word_id INTEGER,
-                correct_count INTEGER DEFAULT 0,
-                FOREIGN KEY (user_id) REFERENCES users(user_id),
-                FOREIGN KEY (word_id) REFERENCES words(word_id),
-                PRIMARY KEY (user_id, word_id)
-            )
-        ''')
-        self.conn.commit()
+    def __init__(self, db_name: str = "sqlite:///language_learning.db"):
+        self.engine = create_engine(db_name)
+        Base.metadata.create_all(self.engine)
+        self.Session = sessionmaker(bind=self.engine)
 
     def add_user(self, username: str) -> int:
-        """Adds a new user and returns their user_id."""
-        self.cursor.execute("INSERT INTO users (username) VALUES (?)", (username,))
-        self.conn.commit()
-        self.cursor.execute("SELECT user_id FROM users WHERE username = ?", (username,))
-        return self.cursor.fetchone()[0]
+        session = self.Session()
+        try:
+            user = User(username=username)
+            session.add(user)
+            session.commit()
+            return user.user_id
+        except Exception as e:
+            session.rollback()
+            raise e
+        finally:
+            session.close()
 
-    def add_word(self, word: str) -> int:
-        """Adds a new word and returns its word_id."""
-        self.cursor.execute("INSERT OR IGNORE INTO words (word) VALUES (?)", (word,))
-        self.conn.commit()
-        self.cursor.execute("SELECT word_id FROM words WHERE word = ?", (word,))
-        return self.cursor.fetchone()[0]
+    def add_word(self, word: str, language: str, definition: Optional[str] = None) -> int:
+        session = self.Session()
+        try:
+            word_obj = session.query(Word).filter_by(word=word, language=language).first()
+            if not word_obj:
+                word_obj = Word(word=word, language=language, definition=definition)
+                session.add(word_obj)
+                session.commit()
+            return word_obj.word_id
+        except Exception as e:
+            session.rollback()
+            raise e
+        finally:
+            session.close()
 
-    def update_user_word(self, user_id: int, word_id: int, correct: bool):
-        """Updates the user's progress for a specific word."""
-        self.cursor.execute('''
-            INSERT OR REPLACE INTO user_progress (user_id, word_id, correct_count)
-            VALUES (?, ?, (SELECT COALESCE((SELECT correct_count FROM user_progress WHERE user_id = ? AND word_id = ?), 0) + ?))
-        ''', (user_id, word_id, user_id, word_id, 1 if correct else 0))
-        self.conn.commit()
+    def update_user_word(self, user_id: int, word_id: int, correct: bool) -> None:
+        session = self.Session()
+        try:
+            progress = session.query(UserProgress).filter_by(user_id=user_id, word_id=word_id).first()
+            if not progress:
+                progress = UserProgress(user_id=user_id, word_id=word_id)
+            if correct:
+                progress.correct_count += 1
+            else:
+                progress.incorrect_count += 1
+            progress.last_attempted = datetime.utcnow()
+            session.add(progress)
+            session.commit()
+        except Exception as e:
+            session.rollback()
+            raise e
+        finally:
+            session.close()
 
-    def close(self):
-        """Closes the database connection."""
-        self.conn.close()
+    def get_user_progress(self, user_id: int) -> List[Tuple[str, int, int]]:
+        session = self.Session()
+        try:
+            progress = session.query(UserProgress).filter_by(user_id=user_id).all()
+            return [(p.word.word, p.correct_count, p.incorrect_count) for p in progress]
+        finally:
+            session.close()
 
-class ProgressTracker:
-    """Manages user progress tracking and database updates."""
-    def __init__(self, db_manager: LanguageLearningDatabase):
-        self.db_manager = db_manager
+    def get_all_words(self, language: Optional[str] = None) -> List[str]:
+        session = self.Session()
+        try:
+            query = session.query(Word)
+            if language:
+                query = query.filter_by(language=language)
+            words = query.all()
+            return [w.word for w in words]
+        finally:
+            session.close()
 
-    def update_progress(self, user_id: int, word_id: int, correct: bool):
-        """Updates the user's progress in the database."""
-        self.db_manager.update_user_word(user_id, word_id, correct)
-
-    def add_user(self, username: str) -> int:
-        """Adds a user via the database manager."""
-        return self.db_manager.add_user(username)
-
-    def add_word(self, word: str) -> int:
-        """Adds a word via the database manager."""
-        return self.db_manager.add_word(word)
+    def get_user_by_id(self, user_id: int) -> Optional[User]:
+        session = self.Session()
+        try:
+            return session.query(User).filter_by(user_id=user_id).first()
+        finally:
+            session.close()
