@@ -1,4 +1,3 @@
-
 # Function Overview
 Function: adjustTextToProficiency(text, proficiencyLevel, userVocabulary)
 Adjusting an Existing Text for the User’s Language Proficiency
@@ -42,3 +41,7 @@ Parameters:
    - 
 
 If necesary, use frameworks like LangChain or AutoGen (or any more up-to-date frameworks) in the code.  
+
+# Implementation Details
+
+The `adjustTextToProficiency` function is implemented in `Jonas/functions.py`. It takes `text`, `proficiencyLevel`, and `userVocabulary` as parameters and adjusts the text accordingly. The function preserves proper nouns, domain-specific terms, and ensures grammatical integrity. It replaces complex words with simpler synonyms based on user vocabulary and context.
