@@ -39,3 +39,6 @@ Parameters:
    Once the entire text has been processed:
    - Conduct a holistic review to ensure that all replacements and simplifications maintain coherence, readability, and context integrity across the document.
    - Double-check that proper nouns, technical terms, and culturally significant elements remain intact and that the overall message is preserved.
+   - 
+
+If necesary, use frameworks like LangChain or AutoGen (or any more up-to-date frameworks) in the code.  
