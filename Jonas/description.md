@@ -1,11 +1,12 @@
+TODO: Refine this into an algorithmic description in natural language (like very high-level pseudo code)
 
 # Function Overview
-Function: adjustTextToProficiency(text, proficiencyLevel, userVocabulary)
+Function: adjustTextToProficiency(text, proficiencyLevel)
 Adjusting an Existing Text for the User’s Language Proficiency
 Parameters:
 - text that should be changed
 - proficiencyLevel: The user’s language proficiency (e.g., HSK 1-9 for Mandarin, A1-C2 for European languages) described in natural language.
-- userVocabulary: A list of all words which the user knows. Every word gets a score assigned between 0 (user does not know the word at all) to 1 (user knows the word perfectly).
+- userVocabulary: A list of all words which the user knows. Every word gets a score assigned between 0 (user does not know the word at all) to 1 (user knows the word perfectly). The user vocabulary can be requested with the function getWordFamiliarity(targetWord).
 
 
 
@@ -40,8 +41,11 @@ Parameters:
 8. **Final Review and Quality Check**  
    Once the entire text has been processed:
    - Conduct a holistic review to ensure that all replacements and simplifications maintain coherence, readability, and context integrity across the document.
+   - Compare the original text to the proficiency-adjusted text to see if important meanings are preserved (as far as this is possible in the simpler language)
    - Double-check that proper nouns, technical terms, and culturally significant elements remain intact and that the overall message is preserved.
-   - 
 
 If necesary, use frameworks like LangChain or AutoGen (or any more up-to-date frameworks) in the code. 
 Use OpenAi API for LLM completions and text embeddings.
+The usage of which LLM is ised should be defined in one place to exchange the api for the LLM and the embeddings easily.
+The code should work for the world's 20 most popular languages, i.e. if the lemmatizer only works for English, think about alternatives or make use of the LLM as a lemmatizer.
+Use clean code principles and structure the code according to the principle "classes should be deep", i.e. the only public function/method that is publicly accessible should be adjustTextToProficiency()
